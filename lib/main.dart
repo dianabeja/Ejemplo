@@ -1,101 +1,84 @@
-import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 void main() {
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => MyAppState(),
-      child: MaterialApp(
-        title: 'Namer App',
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-              seedColor: Color.fromARGB(255, 196, 177, 255)),
-        ),
-        home: MyHomePage(),
+    return MaterialApp(
+      title: 'Diana App',
+      theme: ThemeData(
+        primarySwatch: Colors.purple,
       ),
+      home: MyHomePage(),
     );
   }
 }
 
-class MyAppState extends ChangeNotifier {
-  var current = WordPair.random();
+class MyHomePage extends StatefulWidget {
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
 
-  void getNext() {
-    current = WordPair.random();
-    notifyListeners();
-  }
+class _MyHomePageState extends State<MyHomePage> {
+  final TextEditingController _controller = TextEditingController();
+  String _respuesta = '';
 
-  var favorites = <WordPair>[];
-  void toggleFavorite() {
-    if (favorites.contains(current)) {
-      favorites.remove(current);
-    } else{
-      favorites.add(current)
+  Future<void> _consultarModelo() async {
+    try {
+      final body = json.decode(_controller.text);
+
+     final url = Uri.parse('https://heart-ml-service-dianabeja.cloud.okteto.net/score');
+      final response = await http.post(url, body: json.encode(body), headers: {"Content-Type": "application/json"});
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _respuesta = response.body;
+        });
+      } else {
+        setState(() {
+          _respuesta = 'Error al obtener respuesta';
+        });
+      }
+    } catch (error) {
+      
+      setState(() {
+        _respuesta = 'Error al formatear el JSON';
+      });
     }
-    notifyListeners();
   }
-}
 
-class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
-    var pair = appState.current;
-
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            BigCard(pair: pair),
-            SizedBox(height: 10),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    appState.getNext();
-                  },
-                  child: Text('Siguiente'),
-                ),
-              ],
-            )
-          ],
-        ),
+      appBar: AppBar(
+        title: Text("Diana App"),
       ),
-    );
-  }
-}
-
-class BigCard extends StatelessWidget {
-  const BigCard({
-    super.key,
-    required this.pair,
-  });
-
-  final WordPair pair;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    final style = theme.textTheme.displayMedium!.copyWith(
-      color: theme.colorScheme.onPrimary,
-    );
-    return Card(
-      color: theme.colorScheme.primary,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text(pair.asLowerCase, style: style),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Container(
+            padding: EdgeInsets.all(10.0),
+            child: TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                labelText: 'Ingresa tu JSON aquí',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 10,
+            ),
+          ),
+          ElevatedButton(
+            child: Text('Consultar Modelo'),
+            onPressed: _consultarModelo,
+          ),
+          SizedBox(height: 20),
+          Text(_respuesta),
+        ],
       ),
     );
   }
