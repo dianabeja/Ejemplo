@@ -3,10 +3,10 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 void main() {
-  runApp(MyApp());
+  runApp(DianaAPP());
 }
 
-class MyApp extends StatelessWidget {
+class DianaAPP extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -27,6 +27,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final _formKey = GlobalKey<FormState>();
   String _respuesta = '';
+   String _respuesta2 = '';
   int? distance, passengers, miscellaneousfees, tripduration;
   TextEditingController _urlController = TextEditingController();
   TextEditingController _shaController = TextEditingController();
@@ -35,8 +36,8 @@ class _MyHomePageState extends State<MyHomePage> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
-      final url =
-          Uri.parse('https://modelotaxi-service-dianabeja.cloud.okteto.net/');
+      final url = Uri.parse(
+          'https://modelotaxi-service-dianabeja.cloud.okteto.net/predict');
       final response = await http.post(url,
           body: json.encode({
             "distance_traveled": distance,
@@ -48,10 +49,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
       if (response.statusCode == 200) {
         Map<String, dynamic> jsonResponse = json.decode(response.body);
-        double? price = jsonResponse['premiumPrice'];
+        double? price = jsonResponse['fare'];
         setState(() {
           _respuesta =
-              ' ${price?.toStringAsFixed(2)}'; // Convertimos el número a String con dos decimales
+              '$price'; // Convertimos el número a String con dos decimales
         });
       } else {
         setState(() {
@@ -76,7 +77,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     final headers = {
-      'Authorization': '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',
+      'Authorization': 'Bearer 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',
       'Accept': 'application/vnd.github.v3+json',
       'Content-type': 'application/json',
     };
@@ -85,11 +86,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (response.statusCode == 204) {
       setState(() {
-        _respuesta = 'Llamado a API exitoso';
+        _respuesta2 = 'Llamado a API exitoso';
       });
     } else {
       setState(() {
-        _respuesta = 'Error al hacer el llamado a la API';
+        _respuesta2 = 'Error al reentrenar modelo';
       });
     }
   }
@@ -98,7 +99,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Axolot Machine Learning"),
+        title: const Text("Taxi"),
         backgroundColor: Color.fromARGB(255, 164, 136, 255),
       ),
       body: SingleChildScrollView(
@@ -184,12 +185,33 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: TextFormField(
-                    controller:
-                        _urlController, // Asociar el controlador al campo
-                    decoration: InputDecoration(labelText: 'URL'),
-                    // No establecer el keyboardType, ya que es un campo de URL
-                    onSaved: (value) {},
+                  child: DropdownButtonFormField<String>(
+                    decoration: InputDecoration(labelText: 'Dataset'),
+                    items: [
+                      DropdownMenuItem(
+                          value:
+                              'https://firebasestorage.googleapis.com/v0/b/heartmodel-caedd.appspot.com/o/train.csv?alt=media&token=f2930a67-ab0b-4944-bed4-bbfd90d208d1',
+                          child: Text("100")),
+                      DropdownMenuItem(
+                          value:
+                              'https://firebasestorage.googleapis.com/v0/b/heartmodel-caedd.appspot.com/o/train50.csv?alt=media&token=0e7cd827-8c59-4a30-8c37-c93a11661002',
+                          child: Text("50")),
+                      DropdownMenuItem(
+                          value:
+                              'https://firebasestorage.googleapis.com/v0/b/heartmodel-caedd.appspot.com/o/train25.csv?alt=media&token=9e7d3e02-5d15-4e8b-9350-a2ca205599c1',
+                          child: Text("25")),
+                    ],
+                    onChanged: (value) {
+                      _urlController.text = value!;
+                      print('hola');
+                      print(value);
+
+                    },
+                    onSaved: (value) {
+                      _urlController.text = value!;
+                      print('adios');
+                      print(value);
+                    },
                   ),
                 ),
                 ElevatedButton(
@@ -205,7 +227,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
                 SizedBox(height: 20),
-                Text(_respuesta),
+                Text(_respuesta2),
               ],
             ),
           ),
